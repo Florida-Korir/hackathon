@@ -1,37 +1,55 @@
-import Link from "next/link"
-import { usePathname } from "next/navigation"
-import MenuItem from "./MenuItem"
-import MenuItemFollow from "./MenuItemFollow"
-import { useEffect } from "react"
-import { useUser } from "@/app/context/user"
-import ClientOnly from "@/app/components/ClientOnly"
-import { useGeneralStore } from "@/app/stores/general"
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import MenuItem from "./MenuItem";
+import MenuItemFollow from "./MenuItemFollow";
+import { useEffect } from "react";
+import { useUser } from "@/app/context/user";
+import ClientOnly from "@/app/components/ClientOnly";
+import { useGeneralStore } from "@/app/stores/general";
 import { ZegoUIKitPrebuilt } from '@zegocloud/zego-uikit-prebuilt';
 
 export default function SideNavMain() {
+    let { setRandomUsers, randomUsers } = useGeneralStore();
 
-    let { setRandomUsers, randomUsers} = useGeneralStore()
-
-    const contextUser = useUser()
-    const pathname = usePathname()
-
-    useEffect(() => { setRandomUsers() }, [])
+    const contextUser = useUser();
+    const pathname = usePathname();
 
     useEffect(() => {
-        document.addEventListener('DOMContentLoaded', () => {
+        setRandomUsers();
+    }, []);
+
+    useEffect(() => {
+        // Check if the code is running in the browser environment
+        if (typeof window !== 'undefined') {
+            document.addEventListener('DOMContentLoaded', () => {
+                const appDiv = document.getElementById('live');
+                if (appDiv) {
+                    init(appDiv);
+                }
+            });
+        }
+    }, []);
+
+    const handleStartLiveStreaming = () => {
+        // Check if the code is running in the browser environment
+        if (typeof window !== 'undefined') {
             const appDiv = document.getElementById('live');
             if (appDiv) {
                 init(appDiv);
             }
-        });
-    }, []);
-
-    const handleStartLiveStreaming = () => {
-        const appDiv = document.getElementById('live');
-        if (appDiv) {
-            init(appDiv);
         }
     };
+
+    // useEffect for Zego UI Kit initialization
+    useEffect(() => {
+        // Check if the code is running in the browser environment
+        if (typeof window !== 'undefined') {
+            const appDiv = document.getElementById('live');
+            if (appDiv) {
+                init(appDiv);
+            }
+        }
+    }, []);
 
     return (
         <>
@@ -42,12 +60,11 @@ export default function SideNavMain() {
                     ${pathname === '/' ? 'lg:w-[310px]' : 'lg:w-[220px]'}
                 `}
             >
-                
                 <div className="lg:w-full w-[55px] mx-auto">
                     <Link href="/">
                         <MenuItem 
                             iconString="For You" 
-                            colorString={pathname == '/' ? '#F02C56' : ''} 
+                            colorString={pathname === '/' ? '#F02C56' : ''} 
                             sizeString="25"
                         />
                     </Link>
@@ -55,8 +72,6 @@ export default function SideNavMain() {
                     <button id='live' onClick={handleStartLiveStreaming}>
                         <MenuItem iconString="LIVE" colorString="#000000" sizeString="25"/>
                     </button>
-                    
-
                     <div className="border-b lg:ml-2 mt-2" />
                     <h3 className="lg:block hidden text-xs text-gray-600 font-semibold pt-4 pb-2 px-2">Suggested accounts</h3>
 
@@ -99,38 +114,36 @@ export default function SideNavMain() {
 
                     <div className="pb-14"></div>
                 </div>
-
             </div>
         </>
-    )
+    );
 }
 
-// get token
-//! You need generate a token using your own backend api!
-//! Please refer to https://docs.zegocloud.com/article/14741 for more information.
+// Function to generate token from your backend
 function generateToken(tokenServerUrl: string, userID: string) {
-    // Obtain the token interface provided by the App Server
     return fetch(
-      `${tokenServerUrl}/access_token?userID=${userID}&expired_ts=7200`,
-      {
-        method: 'GET',
-      }
+        `${tokenServerUrl}/access_token?userID=${userID}&expired_ts=7200`,
+        {
+            method: 'GET',
+        }
     ).then((res) => res.json());
 }
 
+// Function to generate a random ID
 function randomID(len: number) {
     let result = '';
     if (result) return result;
     var chars = '12345qwertyuiopasdfgh67890jklmnbvcxzMNBVCZXASDQWERTYHGFUIOLKJP',
-      maxPos = chars.length,
-      i;
+        maxPos = chars.length,
+        i;
     len = len || 5;
     for (i = 0; i < len; i++) {
-      result += chars.charAt(Math.floor(Math.random() * maxPos));
+        result += chars.charAt(Math.floor(Math.random() * maxPos));
     }
     return result;
 }
 
+// Function to extract URL parameters
 function getUrlParams(url: string) {
     let urlStr = url.split('?')[1];
     const urlSearchParams = new URLSearchParams(urlStr);
@@ -138,66 +151,66 @@ function getUrlParams(url: string) {
     return result;
 }
 
+// Function to initialize Zego UI Kit
 async function init(appDiv: HTMLElement) {
     const roomID = getUrlParams(window.location.href)['roomID'] || randomID(5);
     let role = getUrlParams(window.location.href)['role'] || 'Host';
     role =
-      role === 'Host'
-        ? ZegoUIKitPrebuilt.Host
-        : role === 'Cohost'
-        ? ZegoUIKitPrebuilt.Cohost
-        : ZegoUIKitPrebuilt.Audience;
+        role === 'Host'
+            ? ZegoUIKitPrebuilt.Host
+            : role === 'Cohost'
+            ? ZegoUIKitPrebuilt.Cohost
+            : ZegoUIKitPrebuilt.Audience;
   
     let sharedLinks = [];
     if (role === ZegoUIKitPrebuilt.Host || role === ZegoUIKitPrebuilt.Cohost) {
-      sharedLinks.push({
-        name: 'Join as co-host',
-        url:
-          window.location.origin +
-          window.location.pathname +
-          '?roomID=' +
-          roomID +
-          '&role=Cohost',
-      });
+        sharedLinks.push({
+            name: 'Join as co-host',
+            url:
+                window.location.origin +
+                window.location.pathname +
+                '?roomID=' +
+                roomID +
+                '&role=Cohost',
+        });
     }
     sharedLinks.push({
-      name: 'Join as audience',
-      url:
-        window.location.origin +
-        window.location.pathname +
-        '?roomID=' +
-        roomID +
-        '&role=Audience',
+        name: 'Join as audience',
+        url:
+            window.location.origin +
+            window.location.pathname +
+            '?roomID=' +
+            roomID +
+            '&role=Audience',
     });
   
     const userID = randomID(5);
     const userName = randomID(5);
     const { token } = await generateToken(
-      'https://nextjs-token.vercel.app/api',
-      userID
+        'https://nextjs-token.vercel.app/api',
+        userID
     );
     const KitToken = ZegoUIKitPrebuilt.generateKitTokenForProduction(
-      1484647939 , // You need to replace the appid with your own appid
-      token,
-      roomID,
-      userID,
-      userName
+        1484647939 , // Replace with your own appid
+        token,
+        roomID,
+        userID,
+        userName
     );
     const zp = ZegoUIKitPrebuilt.create(KitToken);
     zp.joinRoom({
-      container: appDiv,
-      branding: {
-        logoURL:
-          'https://www.zegocloud.com/_nuxt/img/zegocloud_logo_white.ddbab9f.png',
-      },
-      scenario: {
-        mode: ZegoUIKitPrebuilt.LiveStreaming,
-        
-      },
-      sharedLinks,
-      onLeaveRoom: () => {
-        // do do something
-      },
-      showUserList: true,
+        container: appDiv,
+        branding: {
+            logoURL:
+                'https://www.zegocloud.com/_nuxt/img/zegocloud_logo_white.ddbab9f.png',
+        },
+        scenario: {
+            mode: ZegoUIKitPrebuilt.LiveStreaming,
+        },
+        sharedLinks,
+        onLeaveRoom: () => {
+            // Handle leaving room
+        },
+        showUserList: true,
     });
 }
